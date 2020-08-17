@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>quiz in Game</title>
+    <style>
+        canvas{
+            border: 3px solid white;
+            border-radius: 10px;
+            position: absolute;
+            left: 300px;
+            top: 120px;
+        }
+        body{
+            background-color: rgba(0, 0, 0, 0.774);
+        }
+        @media screen and (max-width:800px){
+            canvas{
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                left: 0px;
+                top:0px
+            }
+        }
+    </style>
+   <link rel="shortcut icon" type="image/png" href="#">
+</head>
+<body onload="start()" onmousedown="accelerate(-0.2)" onmouseup="accelerate(0.1)" ontouchstart="accelerate(-0.3)">
+    <script>
+        var bird,score,hitSound,background
+        var obstacles=[]
+
+       function start(){
+           gameSpace.draw()
+           bird=new component(200,200,"Picture1.png",43,30,"image")
+           background=new component(0,0,"Picture2.png",800,400,"image")
+           score= new component("30px", "Consolas", "black", 600, 40, "text")
+           hitSound = new sound("bounce.mp3");
+       }
+       var gameSpace={
+           canvas: document.createElement("canvas"),
+           draw: function () {
+               this.canvas.width=800
+               this.canvas.height=400
+               this.context=this.canvas.getContext("2d")
+               document.body.insertBefore(this.canvas,document.body.childNodes[0])
+               this.interval=setInterval(update,20)
+               this.frameNo=0
+           },
+           refresh: function(){
+               this.context.clearRect(0,0,this.canvas.width,this.canvas.height)
+           },
+           gameOver: function(){
+               clearInterval(this.interval)
+           }
+       }
+
+       function component(x,y,color,width,height,type) {
+           this.x=x
+           this.y=y
+           this.width=width
+           this.height=height
+           this.type=type
+           if(type=="image"){
+               this.image=new Image()
+               this.image.src=color
+           }
+           this.speedX=0
+           this.speedY=0
+           this.gravity=0.05
+           this.gravitySpeed=0
+           ctx=gameSpace.context
+           this.redraw = function(){
+            if(this.type=="text"){
+                ctx.font=this.x+" "+this.y
+                ctx.fillStyle=color
+                ctx.fillText(this.text, this.width, this.height);
+           }
+           else if(type == "image"){
+            ctx.drawImage(this.image,
+                this.x,
+                this.y,
+                this.width, this.height);
+           }
+           
+           else{
+               ctx.fillStyle=color
+               ctx.fillRect(this.x,this.y,this.width,this.height)
+            }}
+            this.newPos=function(){
+                this.gravitySpeed+=this.gravity
+                this.x+=this.speedX
+                this.y+=this.speedY+this.gravitySpeed
+                this.touchBtm()
+            }
+
+            this.touchBtm=function(){
+                if(this.y>(gameSpace.canvas.height-this.height)){
+                    this.y=(gameSpace.canvas.height-this.height)
+                }
+            }
+
+            this.crashWith=function(otherObj){
+                var myLeft=this.x
+                var myRight=this.x+this.width
+                var myTop=this.y
+                var myBottom=this.y+this.height
+                var otherLeft=otherObj.x
+                var otherRight=otherObj.x+otherObj.width
+                var otherTop=otherObj.y
+                var otherBottom=otherObj.y+otherObj.height
+                var crash
+                
+                if((myLeft>otherRight)||(myRight<otherLeft)||(myTop>otherBottom)||(myBottom<otherTop)){
+                    return crash=false
+                }else{return crash=true}
+
+            }
+        }
+
+        function update() {
+            for(i=0;i<obstacles.length;i++){
+                if(bird.crashWith(obstacles[i])){
+                hitSound.play();
+                gameSpace.gameOver()
+                return
+            }}  
+            gameSpace.refresh()
+            gameSpace.frameNo+=1
+            background.redraw()
+            if(gameSpace.frameNo==1||everyInterval(150)){
+                var maxHeight=200
+                var minHeight=70
+                var height=Math.floor(Math.random()*(maxHeight-minHeight)+minHeight)
+                var minGap=80
+                var maxGap=200
+                var gap=Math.floor(Math.random()*(maxGap-minGap)+minGap)
+                obstacles.push(new component(800,0,"green",50,height))
+                obstacles.push(new component(800,height+gap,"green",50,800-(height+gap)))
+            }
+            
+            for(i=0;i<obstacles.length;i++){
+                obstacles[i].x+=-1
+                obstacles[i].redraw()
+            }
+
+            let x=((gameSpace.frameNo)/150)-3
+            if(x<0){
+                x=0
+            }else{x=parseInt(x)}
+            score.text="Score: "+x
+            score.redraw()
+            bird.redraw()
+            bird.newPos()
+            
+        }
+       
+        function accelerate(n){
+            bird.gravity=n
+        }
+    
+        function everyInterval(n){
+            if((gameSpace.frameNo/n)%1==0){
+                return true
+            }else{
+                return false
+            }
+        }
+        function sound(src) {
+            this.sound = document.createElement("audio");
+            this.sound.src = src;
+            this.sound.setAttribute("preload", "auto");
+            this.sound.setAttribute("controls", "none");
+            this.sound.style.display = "none";
+            document.body.appendChild(this.sound);
+            this.play = function(){
+                this.sound.play();
+            }
+            this.stop = function(){
+                this.sound.pause();
+            }    
+        }
+
+    </script>
+</body>
+</html>
